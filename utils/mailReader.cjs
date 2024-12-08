@@ -26,7 +26,7 @@ const emailConfig = {
 
 // Initialize IMAP connection
 const imap = new Imap(emailConfig);
-console.log(process.env.PAYEE_PRIVATE_KEY);
+// console.log(process.env.PAYEE_PRIVATE_KEY);
 // Request Network configuration
 const requestClient = new RequestNetwork({
   nodeConnectionConfig: {

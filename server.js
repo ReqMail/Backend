@@ -41,6 +41,7 @@ app.get('/address', (req, res) => {
     try {
         const { email } = req.query;
         const emailAddress = email;
+        console.log("fetching account address for emailAddress",emailAddress);
         if (!emailAddress) {
             return res.status(400).json({
                 success: false,
@@ -77,7 +78,7 @@ app.get('/address', (req, res) => {
 app.post('/address', (req, res) => {
     try {
         const { accountAddress, emailAddress } = req.body;
-        
+        console.log("adding account address for emailAddress",emailAddress);
         // Validate input
         if (!accountAddress || !emailAddress) {
             return res.status(400).json({
