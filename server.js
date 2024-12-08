@@ -10,16 +10,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Store addresses (in a real app, this would be a database)
-let addresses = [
-    {
-        emailAddress: "sakshambhugra8@gmail.com",
-        accountAddress: "0x1526d2B6d07C6661D71Be58d92A4F088d36C8FfD"
-    },
-    {
-        emailAddress: "fitnessfrreak2@gmail.com",
-        accountAddress: "0x3076b4C231d953631B41166ACF72dD9f7EbAb1A0"
-    }
-];
+let addresses = [];
 
 // GET endpoint to retrieve all addresses
 app.get('/addresses', (req, res) => {
