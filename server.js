@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-
+require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -12,12 +12,12 @@ app.use(bodyParser.json());
 // Store addresses (in a real app, this would be a database)
 let addresses = [
     {
-        emailAddress: 'sakshambhugra8@gmail.com',
-        accountAddress: '0x09D9a6EdfE066fc24F46bA8C2b21736468f2967D' // Your test payer address
+        emailAddress: "sakshambhugra8@gmail.com",
+        accountAddress: "0x1526d2B6d07C6661D71Be58d92A4F088d36C8FfD"
     },
     {
-        emailAddress: 'fitnessfrreak2@gmail.com',
-        accountAddress: '0x961FebC2c125f0d8Bd55dBA919b96E6aFeDFD79D' // Your test payee address
+        emailAddress: "fitnessfrreak2@gmail.com",
+        accountAddress: "0x3076b4C231d953631B41166ACF72dD9f7EbAb1A0"
     }
 ];
 

@@ -9,6 +9,7 @@ const { Types, RequestNetwork,Utils } = require("@requestnetwork/request-client.
 const { ethers,Wallet } = require('ethers');
 const dotenv = require('dotenv');
 const { hasSufficientFunds, hasErc20Approval, approveErc20, payRequest } = require("@requestnetwork/payment-processor");
+const { generateInvoice, sendInvoiceEmail } = require('./invoiceGenerator');
 dotenv.config();
 
 // Email credentials
@@ -44,13 +45,32 @@ const requestClient = new RequestNetwork({
 }]
 });
 
+async function getRequestData(requestId) {
+  try {
+      const request = await requestClient.fromRequestId(requestId);
+      const requestData = await request.getData();
+      console.log("requestData",requestData);
+      return {
+          requestId: requestId,
+          payer: requestData.payer.value,
+          payee: requestData.payee.value,
+          amount: requestData.expectedAmount/10**18,
+          currency: "RTK",
+          reason: requestData.contentData.reason || 'Transfer',
+          timestamp: requestData.timestamp
+      };
+  } catch (error) {
+      console.error('Error fetching request data:', error);
+      throw error;
+  }
+}
 
 // Add this function to fetch addresses from the server
 async function getAddressFromEmail(emailAddress) {
   try {
     console.log("encodedemail",encodeURIComponent(emailAddress));
     const response = await fetch(
-      `http://localhost:3000/address?email=${encodeURIComponent(emailAddress)}`,
+      `http://localhost:5500/address?email=${encodeURIComponent(emailAddress)}`,
       {
         method: 'GET',
         headers: {
@@ -184,6 +204,17 @@ async function performOperation(subject, body, fromEmail) {
     const result = await createAndPayRequest(fromEmail, toEmail, amount);
     if (result.success) {
       console.log(`Transfer completed successfully. Request ID: ${result.requestId}`);
+      const requestData = await getRequestData(result.requestId);
+      const invoiceFile = await generateInvoice(requestData);
+      
+      // Send invoice to payee
+      await sendInvoiceEmail(
+        fromEmail, 
+        invoiceFile,
+        requestData
+      );
+  
+      console.log('Invoice generated and sent successfully');
     } else {
       console.error(`Transfer failed: ${result.error}`);
     }
@@ -227,10 +258,79 @@ async function delayedResolve() {
 }
 // Update processEmail function
 async function processEmail(email) {
-  console.log("Processing email from:", email.from.value[0].address);
-  // console.log("email",email.subject,email.text);
-  await performOperation(email.subject, email.text, email.from.value[0].address);
+  try {
+    console.log("Processing email from:", email.from.value[0].address);
+    // console.log("email",email.subject,email.text);
+    await performOperation(email.subject, email.text, email.from.value[0].address);
+
+    // After transaction is complete, get request data and generate invoice
+   
+  } catch (error) {
+    console.error('Error processing email:', error);
+    throw error;
+  }
 }
+
+// async function processEmail(email) {
+//   try {
+//       // Extract email details
+//       const fromAddress = email.from.value[0].address;
+//       console.log('Processing email from:', fromAddress);
+
+//       // Process the email content
+//       const text = email.text;
+//       if (text.toLowerCase().includes('transfer')) {
+//           console.log('Performing transfer operation...');
+          
+//           // Extract transfer details from email
+//           const amountMatch = text.match(/amount:\s*(\d+(\.\d+)?)/i);
+//           const toMatch = text.match(/to:\s*([^\s]+@[^\s]+)/i);
+          
+//           if (!amountMatch || !toMatch) {
+//               throw new Error('Invalid transfer format');
+//           }
+
+//           const amount = amountMatch[1];
+//           const toEmail = toMatch[1];
+
+//           // Get addresses for both parties
+//           const fromAccountAddress = await getAddressFromEmail(fromAddress);
+//           const toAccountAddress = await getAddressFromEmail(toEmail);
+
+//           // Create and process the request
+//           console.log('Creating request...');
+//           const request = await createRequest(
+//               fromAccountAddress,
+//               toAccountAddress,
+//               amount
+//           );
+          
+//           // Store the requestId from the created request
+//           const requestId = request.requestId;
+//           console.log(`Request created with ID: ${requestId}`);
+
+//           // Process the payment
+//           await processPayment(request);
+//           console.log(`Transfer completed successfully. Request ID: ${requestId}`);
+
+//           // After transaction is complete, get request data and generate invoice
+//           const requestData = await getRequestData(requestId);
+//           const invoiceFile = await generateInvoice(requestData);
+          
+//           // Send invoice to payee
+//           await sendInvoiceEmail(
+//               toEmail,  // Send to recipient's email
+//               invoiceFile,
+//               requestData
+//           );
+
+//           console.log('Invoice generated and sent successfully');
+//       }
+//   } catch (error) {
+//       console.error('Error processing email:', error);
+//       throw error;
+//   }
+// }
 
 // Modify the fetchEmails function to return a promise
 function fetchEmails() {
@@ -372,6 +472,5 @@ process.on('SIGINT', () => {
   }
   process.exit(0);
 });
-
 // Export for testing
 module.exports = { processEmail };
